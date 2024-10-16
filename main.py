@@ -1,10 +1,12 @@
 import pathlib
+from sqlite3 import DatabaseError
 from PyPDF2 import PdfReader
 from datetime import datetime
 from table_creator import create_workbook_from_tr_converter_data
 
 DIVIDER = "§§"
-COLUMNS = ["DATA", "TIPO", "DESCRIZIONE", "IN ENTRATA", "IN USCITA", "SALDO"]
+COLUMNS = ("DATA", "TIPO", "DESCRIZIONE", "IN ENTRATA", "IN USCITA", "SALDO")
+TIPO_TRANSAZIONI = ("Transazione con carta", "Trasferimento", "Pagamento degli interessi")
 
 def main():
     for path in PATH_FROM.iterdir():
@@ -13,10 +15,22 @@ def main():
         vals = []
         for page in reader.pages:
             text = page.extract_text()
-            vals.extend(extract_data(text, year))
-        create_workbook_from_tr_converter_data(vals, year)        
+            data = extract_data(text, year)
+            vals.extend(data)
+        sanitize_data(vals)
+        create_workbook_from_tr_converter_data(vals, year)
 
+def sanitize_data(data:list[list])->list[list]:
+    for i in range(len(data)-1):
+        if to_float(data[i][-1]) - to_float(data[i+1][-2]) == to_float(data[i+1][-1]):
+            data[i+1][-2] = "-" + data[i+1][-2]
     
+def to_float(val:str)-> float:
+    val = val[:-1]
+    val = val.replace(".","")
+    val = val.replace(",",".")
+    return float(val)
+            
 
 def get_year(first_page_text:str) -> str:
     line = first_page_text.split("\n")[1]
@@ -26,104 +40,47 @@ def get_year(first_page_text:str) -> str:
     return line[start:end]
 
 def extract_data(text:str, year:str) -> list[list[str]]:
-    def normalize_date(text:str) -> str:
-        return text[:4] + DIVIDER + text[4:] 
-    
-    def normalize_balance(text:str) -> str:
-        for i in range(len(text)):
-            if text[i].isupper():
-                break
-        
-        count_comma = 0
-        for j in reversed(range(len(text))):
-            if text[j] == ",":
-                count_comma += 1
-                if count_comma == 2:
-                    break
-
-        while text[j] != " ":
-            j-=1
-
-        for k in reversed(range(len(text))):
-            if text[k] == " ":
-                break
-        
-        return text[:i] + DIVIDER + text[i:j] + DIVIDER + text[j:k] + DIVIDER + text[k:]
-    
-    def filter_all(text:str) -> str:
-        # tipo end position
-        for pos_tipo_end in range(4, len(text)):
-            if text[pos_tipo_end] == " ":
-                break
-        # saldo end position
-        for pos_saldo_end in reversed(range(len(text))):
-            if text[pos_saldo_end] == "€":
-                break
-        # saldo start position
-        for pos_saldo_start in reversed(range(pos_saldo_end-1)):
-            if not text[pos_saldo_start].isnumeric():
-                break
-        # in_out start position
-        for pos_in_out_end in reversed(range(pos_saldo_start)):
-            if text[pos_in_out_end] == "€":
-                break
-        # in_out end position
-        for pos_in_out_start in reversed(range(pos_in_out_end-1)):
-            if not text[pos_in_out_start].isnumeric():
-                break
-        
-        return text[:4] + DIVIDER +\
-                text[4:pos_tipo_end] + DIVIDER +\
-                text[pos_tipo_end:pos_in_out_start] + DIVIDER +\
-                text[pos_in_out_start:pos_in_out_end] + DIVIDER +\
-                text[pos_saldo_start:pos_saldo_end]
-
-    def filter_commercio(text:str) -> str:
-        for i in range(6, len(text)):
-            if text[i].isupper():
-                break
-        
-        return text[:4] + DIVIDER +\
-                text[4:i] + DIVIDER +\
-                text[i:]
-
-    def filter_commercio_numbers(text:str) -> str:
-        # saldo end position
-        for pos_saldo_end in reversed(range(len(text))):
-            if text[pos_saldo_end] == "€":
-                break
-        # saldo start position
-        for pos_saldo_start in reversed(range(pos_saldo_end-1)):
-            if not text[pos_saldo_start].isnumeric():
-                break
-        # in_out start position
-        for pos_in_out_end in reversed(range(pos_saldo_start)):
-            if text[pos_in_out_end] == "€":
-                break
-        # Description end position
-        pos_end_description = text.find("quantity:") + 9 + 1 + 8
-
-        return text[:pos_end_description] + DIVIDER +\
-                text[pos_end_description:pos_in_out_end] + DIVIDER +\
-                text[pos_saldo_start:pos_saldo_end]
-
     data = []
+    text = text.replace("\xa0","")
     ltext = text.split("\n")
     for i in range(len(ltext)):
         if ltext[i].find(year) == 0:
-            if len(ltext[i+1]) == 7 and ltext[i+1][-1] == ' ':
-                    t_row = ltext[i-1].strip() + " " + filter_all(ltext[i])
-            else:
-                if ltext[i].find("Commercio") != -1:
-                    t_row = ltext[i-1].strip() + " " + filter_commercio(ltext[i]).strip() + filter_commercio_numbers(ltext[i+1]) 
-                else:
-                    t_row = ltext[i-1].strip() + " " + normalize_date(ltext[i].strip()) + " " + normalize_balance(ltext[i+1].strip()) 
-            data.append([sanitize_data(val) for val in t_row.split(DIVIDER)])
+            complete_text = ltext[i-1] + ltext[i] + ltext[i+1] 
+            data.append(extract_from_text(complete_text))
     return data
 
-def sanitize_data(val:str)->str:
-    val = val.strip()
-    return val.replace("\xa0","")
+def extract_from_text(text:str):
+    def extract_euro_val():
+        for i in reversed(range(len(text))):  
+            if text[i] == "€":
+                break
+        for k in reversed(range(i)):
+            if not text[k].isnumeric() and text[k] != "." and text[k] != ",":
+                break
+        return text[k:i+1]
+    
+    DATA = text[:11]
+    
+    if text.find("Commercio") != -1:
+        TIPO = "Commercio"
+        text = text.replace(DATA, "")
+        text = text.replace(TIPO, "")
+        DESCRIPTION = text[:text.find("quantity:") + 9 + 9]
+        text = text.replace(DESCRIPTION, "")
+        SALDO = extract_euro_val().strip()
+        text = text.replace(SALDO, "")
+        IN_OUT = extract_euro_val().strip()
+        text = text.replace(IN_OUT, "")
+    else:
+        TIPO = [i for i in TIPO_TRANSAZIONI if text.find(i) != -1][0]
+        text = text.replace(DATA, "")
+        text = text.replace(TIPO, "")
+        SALDO = extract_euro_val().strip()
+        text = text.replace(SALDO, "")
+        IN_OUT = extract_euro_val().strip()
+        text = text.replace(IN_OUT, "")
+        DESCRIPTION = text.strip()
+    return [DATA, TIPO, DESCRIPTION, IN_OUT, SALDO]    
 
 if __name__ == '__main__':
     cwd = pathlib.Path.cwd()

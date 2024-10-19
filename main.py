@@ -17,8 +17,7 @@ def main():
             text = page.extract_text()
             data = extract_data(text, year)
             vals.extend(data)
-        sanitize_data(vals)
-        create_workbook_from_tr_converter_data(vals, year)
+        create_workbook_from_tr_converter_data(vals, year)        
 
 def sanitize_data(data:list[list])->list[list]:
     for i in range(len(data)-1):
@@ -84,7 +83,7 @@ def extract_from_text(text:str):
 
 if __name__ == '__main__':
     cwd = pathlib.Path.cwd()
-    PATH_FROM = cwd / 'ToConvert' 
+    PATH_FROM = cwd / 'ToConvert'
     PATH_TO = cwd / 'Converted'
     YEAR = str(datetime.now().year)
 

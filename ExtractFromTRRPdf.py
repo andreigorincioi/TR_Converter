@@ -1,4 +1,4 @@
-from importlib.resources import path
+"""module used to convert trade republic pdf"""
 import pathlib
 from PyPDF2 import PdfReader
  

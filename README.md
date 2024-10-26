@@ -1,5 +1,5 @@
 # pyTRConverter
-Extracts relevant data to csv file. 
+Questo insieme di script sono stati creati per uniformare i dati degli estratti conto delle varie banche in un unico tipo csv. Con i file unificati si andrà a creare un foglio excel con i dati raggruppati e conforntati in modo da poter tener traccia delle varie spese.
 
 ## Modules
 **ExtractFromTRRPdf**

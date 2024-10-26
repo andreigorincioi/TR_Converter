@@ -1,9 +1,10 @@
 """module used to convert trade republic pdf"""
 import pathlib
 from PyPDF2 import PdfReader
- 
+from utils import convert_to_csv_text
+
 cwd = pathlib.Path.cwd()
-FROM_FOLDER = cwd / 'ToConvertTRR'  
+FROM_FOLDER = cwd / 'ToConvert'  
 TO_FOLDER = cwd / 'Converted'
 
 if not FROM_FOLDER.is_dir() or not TO_FOLDER.is_dir():
@@ -28,7 +29,7 @@ def main() -> None:
         save_to_csv(path, vals)
 
 def save_to_csv(path_file:pathlib.Path, vals:list[list[str]]):
-    text_vals = "\n".join([";".join(v) for v in vals])
+    text_vals = convert_to_csv_text(vals)
     file_name = path_file.name.removesuffix(".pdf") + ".csv"
     with (TO_FOLDER / file_name).open("wt",encoding="utf-8") as fw:
         fw.write(text_vals)
@@ -96,11 +97,4 @@ def extract_from_text(text:str):
     return [DATA, TIPO, DESCRIPTION, IN_OUT, SALDO]    
 
 if __name__ == '__main__':
-    cwd = pathlib.Path.cwd()
-    PATH_FROM = cwd / 'ToConvert'
-    PATH_TO = cwd / 'Converted'
-
-    if PATH_FROM.is_dir() and PATH_TO.is_dir():
-        main()
-    else:
-        print("Folder \"ToConverted\" and \"Converted\" not found.")
+    main()

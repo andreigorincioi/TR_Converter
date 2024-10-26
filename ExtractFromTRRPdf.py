@@ -15,6 +15,7 @@ TIPO_TRANSAZIONI = ("Transazione con carta", "Trasferimento", "Pagamento degli i
   
 def main() -> None:
     for path in FROM_FOLDER.iterdir():
+        if path.name.lower().find("traderepublic") == -1: continue
         reader = PdfReader(path)
         first_page_text = reader.pages[0].extract_text()
         year = get_year(first_page_text)

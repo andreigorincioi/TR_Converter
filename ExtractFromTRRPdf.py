@@ -1,7 +1,5 @@
 import pathlib
-from datetime import datetime as dt
 from PyPDF2 import PdfReader
- 
 
 cwd = pathlib.Path.cwd()
 FROM_FOLDER = cwd / 'ToConvertTRR'  
@@ -14,7 +12,7 @@ DIVIDER = "§§"
 COLUMNS = ("DATA", "TIPO", "DESCRIZIONE", "IN ENTRATA", "IN USCITA", "SALDO")
 TIPO_TRANSAZIONI = ("Transazione con carta", "Trasferimento", "Pagamento degli interessi")
   
-def main() -> list[list[str]]:
+def main() -> None:
     for path in FROM_FOLDER.iterdir():
         reader = PdfReader(path)
         first_page_text = reader.pages[0].extract_text()
@@ -23,16 +21,12 @@ def main() -> list[list[str]]:
         for page in reader.pages:
             text = page.extract_text()
             data = extract_data(text, year)
-<<<<<<< HEAD:ExtractFromTRRPdf.py
-            vals.extend(data)                
+            vals.extend(data)
         sanitize_data(vals)
+        save_to_csv(vals)
 
 def save_to_csv(vals:list[list[str]]):
     pass
-=======
-            vals.extend(data)
-        create_workbook_from_tr_converter_data(vals, year)        
->>>>>>> b41610d3c605c5a18286dd80e7dc27f3988d648a:main.py
 
 def sanitize_data(data:list[list])->list[list]:
     for i in range(len(data)-1):
@@ -64,14 +58,15 @@ def extract_data(text:str, year:str) -> list[list[str]]:
 
 def extract_from_text(text:str):
     def extract_euro_val():
-        for i in reversed(range(len(text))):  
-            if text[i] == "€":
-                break
-        for k in reversed(range(i)):
-            if not text[k].isnumeric() and text[k] != "." and text[k] != ",":
-                break
-        return text[k:i+1]
-    
+        if text:
+            for i in reversed(range(len(text))):
+                if text[i] == "€":
+                    break
+            for k in reversed(range(i)):
+                if not text[k].isnumeric() and text[k] != "." and text[k] != ",":
+                    break
+            return text[k:i+1]
+
     DATA = text[:11]
     
     if text.find("Commercio") != -1:
@@ -94,17 +89,13 @@ def extract_from_text(text:str):
         text = text.replace(IN_OUT, "")
         DESCRIPTION = text.strip()
     return [DATA, TIPO, DESCRIPTION, IN_OUT, SALDO]    
-<<<<<<< HEAD:ExtractFromTRRPdf.py
-=======
 
 if __name__ == '__main__':
     cwd = pathlib.Path.cwd()
     PATH_FROM = cwd / 'ToConvert'
     PATH_TO = cwd / 'Converted'
-    YEAR = str(datetime.now().year)
 
     if PATH_FROM.is_dir() and PATH_TO.is_dir():
         main()
     else:
         print("Folder \"ToConverted\" and \"Converted\" not found.")
->>>>>>> b41610d3c605c5a18286dd80e7dc27f3988d648a:main.py

@@ -1,6 +1,7 @@
+from importlib.resources import path
 import pathlib
 from PyPDF2 import PdfReader
-
+ 
 cwd = pathlib.Path.cwd()
 FROM_FOLDER = cwd / 'ToConvertTRR'  
 TO_FOLDER = cwd / 'Converted'
@@ -9,7 +10,7 @@ if not FROM_FOLDER.is_dir() or not TO_FOLDER.is_dir():
     raise Exception("Folder \"ToConverted\" and \"Converted\" not found.")
 
 DIVIDER = "§§"
-COLUMNS = ("DATA", "TIPO", "DESCRIZIONE", "IN ENTRATA", "IN USCITA", "SALDO")
+COLUMNS = ("DATA", "TIPO", "DESCRIZIONE", "IN ENTRATA/IN USCITA", "SALDO")
 TIPO_TRANSAZIONI = ("Transazione con carta", "Trasferimento", "Pagamento degli interessi")
   
 def main() -> None:
@@ -21,15 +22,18 @@ def main() -> None:
         for page in reader.pages:
             text = page.extract_text()
             data = extract_data(text, year)
-            vals.extend(data)
+            vals.extend(data)                
         sanitize_data(vals)
-        save_to_csv(vals)
+        save_to_csv(path, vals)
 
-def save_to_csv(vals:list[list[str]]):
-    pass
+def save_to_csv(path_file:pathlib.Path, vals:list[list[str]]):
+    text_vals = "\n".join([";".join(v) for v in vals])
+    file_name = path_file.name.removesuffix(".pdf") + ".csv"
+    with (TO_FOLDER / file_name).open("wt",encoding="utf-8") as fw:
+        fw.write(text_vals)
 
 def sanitize_data(data:list[list])->list[list]:
-    for i in range(len(data)-1):
+    for i in range(1, len(data)-1):
         if to_float(data[i][-1]) - to_float(data[i+1][-2]) == to_float(data[i+1][-1]):
             data[i+1][-2] = "-" + data[i+1][-2]
     

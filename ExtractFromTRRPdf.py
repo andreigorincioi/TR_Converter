@@ -1,7 +1,8 @@
 """module used to convert trade republic pdf"""
 import pathlib
 from PyPDF2 import PdfReader
-from utils import convert_to_csv_text
+from utils import convert_to_csv_text, convert_b_format_month
+from datetime import datetime as dt
 
 cwd = pathlib.Path.cwd()
 FROM_FOLDER = cwd / 'ToConvert'  
@@ -74,7 +75,8 @@ def extract_from_text(text:str):
             return text[k:i+1]
 
     DATA = text[:11]
-    
+    data_iso = convert_b_format_month(DATA)
+
     if text.find("Commercio") != -1:
         TIPO = "Commercio"
         text = text.replace(DATA, "")
@@ -94,7 +96,10 @@ def extract_from_text(text:str):
         IN_OUT = extract_euro_val().strip()
         text = text.replace(IN_OUT, "")
         DESCRIPTION = text.strip()
-    return [DATA, TIPO, DESCRIPTION, IN_OUT, SALDO]    
+
+    SALDO = SALDO.replace("€", "")
+    IN_OUT = IN_OUT.replace("€", "")
+    return [data_iso, TIPO, DESCRIPTION, IN_OUT, SALDO]    
 
 if __name__ == '__main__':
     main()

@@ -1,15 +1,17 @@
 """This library is used to convert data from xls file to csv"""
+import datetime
+import openpyxl as xl
 import pathlib
-import xlrd
-from utils import convert_to_csv_text
+from utils import convert_to_csv_text, convert_xls_to_xlsx, get_valuta_symbol
+
 
 MAPPING_XLS = {
-    "DATA":0,
-    "Data Valuta":1,
-    "IN ENTRATA/IN USCITA":2,
-    "VALUTA":3,
-    "DESCRIZIONE":4,
-    "TIPO":5}
+    "DATA":"A",
+    "Data Valuta":"B",
+    "IN ENTRATA/IN USCITA":"C",
+    "VALUTA":"D",
+    "DESCRIZIONE":"E",
+    "TIPO":"F"}
 COLUMNS = ("DATA", "TIPO", "DESCRIZIONE", "IN ENTRATA/IN USCITA", "SALDO")
 cwd = pathlib.Path.cwd()
 FROM_FOLDER = cwd / 'ToConvert'  
@@ -22,22 +24,29 @@ def main():
         save_to_csv(path, vals)
 
 def process_file(path_file:pathlib.Path):
-    wb = xlrd.open_workbook_xls(path_file)
-    sheet = wb.sheet_by_index(0)
-    for row_index in range(sheet.nrows):
-        for col_index in range(sheet.ncols):
-            
-    for row_number in sheet:
+    file_name = path_file.name
+    file_type = file_name[file_name.find("."):]
+    if file_type == ".xls": path_file = convert_xls_to_xlsx(path_file)
+    wb = xl.open(path_file.absolute(), read_only=True, data_only=True)
+    ws = wb.active
+    vals = [list(COLUMNS)]
+    for row_number in range(2, ws.max_row):
         line_vals = []
         for col in COLUMNS:
             match col:
                 case "DATA"|"DESCRIZIONE"|"TIPO":
-                    value = ws[f"{MAPPING_XLS.get(col)}{row_number}"].value
+                    cell_pos = f"{MAPPING_XLS.get(col)}{row_number}"
+                    value = ws[cell_pos].value
+                    if type(value) == datetime.datetime: value = value.strftime("%d/%m/%Y")
+                    if value is None: value = ''
+                    if type(value) != str: raise Exception("Value is not string") 
                     line_vals.append(value)
+                    # TODO add decimal point handling based on confi ini variable
                 case "IN ENTRATA/IN USCITA":
-                    value = ws[f"{MAPPING_XLS.get(col)}{row_number}"].value
-                    value = ws[f"{MAPPING_XLS.get("VALUTA")}{row_number}"].value
+                    cell_pos = f"{MAPPING_XLS.get(col)}{row_number}"
+                    value = ws[cell_pos].value
                     line_vals.append(value)
+        line_vals.append("-")
         vals.append(line_vals)
     return vals
 

@@ -1,13 +1,20 @@
 """module used to convert trade republic pdf"""
 import pathlib
+from configparser import ConfigParser
+from sre_constants import IN
 from PyPDF2 import PdfReader
 from utils import convert_to_csv_text, convert_b_format_month
 from datetime import datetime as dt
+from logger import LoggerModule
 
+<<<<<<< HEAD
 try:
 except Exception as ex:
     
 
+=======
+logger = LoggerModule('ExtractFromTRRPdf') 
+>>>>>>> 350aa2bb01587816f13a864bfd251b0d823cff25
 cwd = pathlib.Path.cwd()
 FROM_FOLDER = cwd / 'ToConvert'  
 TO_FOLDER = cwd / 'Converted'
@@ -18,7 +25,18 @@ if not FROM_FOLDER.is_dir() or not TO_FOLDER.is_dir():
 DIVIDER = "§§"
 COLUMNS = ("DATA", "TIPO", "DESCRIZIONE", "IN ENTRATA/IN USCITA", "SALDO")
 TIPO_TRANSAZIONI = ("Transazione con carta", "Trasferimento", "Pagamento degli interessi")
-  
+
+try:
+    cnf = ConfigParser()
+    cnf.read("config.ini")
+except Exception as ex:
+    logger.error('config.ini not found', ex)        
+
+try:
+    DECIMAL_TYPE = int(cnf['general']['decimal_type'])
+except Exception as ex:
+    logger.error('config-log.ini')
+
 def main() -> None:
     for path in FROM_FOLDER.iterdir():
         if path.name.lower().find("traderepublic") == -1: continue
@@ -100,9 +118,18 @@ def extract_from_text(text:str):
         IN_OUT = extract_euro_val().strip()
         text = text.replace(IN_OUT, "")
         DESCRIPTION = text.strip()
-
+        
     SALDO = SALDO.replace("€", "")
     IN_OUT = IN_OUT.replace("€", "")
+    
+    if DECIMAL_TYPE:
+        SALDO = SALDO.replace('.', 'x')
+        SALDO = SALDO.replace(',', '.')
+        SALDO = SALDO.replace('x', ',')
+        IN_OUT = IN_OUT.replace('.', 'x')
+        IN_OUT = IN_OUT.replace(',', '.')
+        IN_OUT = IN_OUT.replace('x', ',')
+
     return [data_iso, TIPO, DESCRIPTION, IN_OUT, SALDO]    
 
 if __name__ == '__main__':

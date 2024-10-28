@@ -4,6 +4,10 @@ from PyPDF2 import PdfReader
 from utils import convert_to_csv_text, convert_b_format_month
 from datetime import datetime as dt
 
+try:
+except Exception as ex:
+    
+
 cwd = pathlib.Path.cwd()
 FROM_FOLDER = cwd / 'ToConvert'  
 TO_FOLDER = cwd / 'Converted'

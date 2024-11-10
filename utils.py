@@ -1,7 +1,6 @@
 """utils functions"""
 from pathlib import Path
 import pathlib
-import re
 import win32com.client as win32
 
 

@@ -1,7 +1,5 @@
 """utils functions"""
 import pathlib
-import pandas as pd
-import pyexcel as p
 import win32com.client as win32
 import xlrd
 from pathlib import Path

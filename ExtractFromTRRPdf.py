@@ -1,20 +1,11 @@
 """module used to convert trade republic pdf"""
 import pathlib
 from configparser import ConfigParser
-from sre_constants import IN
 from PyPDF2 import PdfReader
-from utils import convert_to_csv_text, convert_b_format_month
-from datetime import datetime as dt
 from logger import LoggerModule
+from utils import convert_to_csv_text, convert_b_format_month, COLUMNS
 
-<<<<<<< HEAD
-try:
-except Exception as ex:
-    
-
-=======
 logger = LoggerModule('ExtractFromTRRPdf') 
->>>>>>> 350aa2bb01587816f13a864bfd251b0d823cff25
 cwd = pathlib.Path.cwd()
 FROM_FOLDER = cwd / 'ToConvert'  
 TO_FOLDER = cwd / 'Converted'

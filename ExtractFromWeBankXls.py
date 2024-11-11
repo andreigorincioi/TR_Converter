@@ -1,9 +1,10 @@
 """This library is used to convert data from xls file to csv"""
 import datetime
-import openpyxl as xl
+from configparser import ConfigParser
 import pathlib
-from utils import convert_to_csv_text, convert_xls_to_xlsx, get_valuta_symbol
-
+import openpyxl as xl
+from logger import LoggerModule
+from utils import convert_to_csv_text, convert_xls_to_xlsx2, COLUMNS, convert_xls_to_xlsx3, convert_xls_to_xlsx4
 
 MAPPING_XLS = {
     "DATA":"A",
@@ -12,10 +13,21 @@ MAPPING_XLS = {
     "VALUTA":"D",
     "DESCRIZIONE":"E",
     "TIPO":"F"}
-COLUMNS = ("DATA", "TIPO", "DESCRIZIONE", "IN ENTRATA/IN USCITA", "SALDO")
 cwd = pathlib.Path.cwd()
 FROM_FOLDER = cwd / 'ToConvert'  
 TO_FOLDER = cwd / 'Converted'
+logger = LoggerModule('ExtractFromTRRPdf') 
+
+try:
+    cnf = ConfigParser()
+    cnf.read("config.ini")
+except Exception as ex:
+    logger.error('config.ini not found', ex)        
+
+try:
+    DECIMAL_TYPE = int(cnf['general']['decimal_type'])
+except Exception as ex:
+    logger.error('config-log.ini')
 
 def main():
     for path in FROM_FOLDER.iterdir():
@@ -26,7 +38,7 @@ def main():
 def process_file(path_file:pathlib.Path):
     file_name = path_file.name
     file_type = file_name[file_name.find("."):]
-    if file_type == ".xls": path_file = convert_xls_to_xlsx(path_file)
+    if file_type == ".xls": path_file = convert_xls_to_xlsx4(path_file)
     wb = xl.open(path_file.absolute(), read_only=True, data_only=True)
     ws = wb.active
     vals = [list(COLUMNS)]
